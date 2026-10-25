@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Second Chance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Second Chance">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f2f2;--card:#fff;--fg:#121212;--mut:#6b6b6b;--bd:#e0e0e0;--red:#d00000;--blue:#0b5ed7;--amb:#b26a00;--navh:56px;--tabh:58px;
+  --disp:'Oswald','Arial Narrow',Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--card:#1a1a1a;--fg:#f2f2f2;--mut:#9a9a9a;--bd:#2c2c2c;--blue:#5b9bff;--red:#ff4d4d;--amb:#f0a53a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,Roboto,Helvetica,Arial,sans-serif}
+header{position:fixed;top:0;left:0;right:0;z-index:5;background:#000;border-bottom:4px solid #d00000;padding:env(safe-area-inset-top,0px) 14px 0;}
+.hin{height:var(--navh);display:flex;align-items:center;gap:10px}
+.logo{background:#d00000;color:#fff;font:700 22px var(--disp);padding:0 10px;transform:skewX(-10deg);letter-spacing:1px}
+.ttl{color:#fff;font:700 20px var(--disp);text-transform:uppercase;letter-spacing:1px}
+.sub{margin-left:auto;color:#aaa;font-size:11px;text-align:right;line-height:1.25}
+main{padding:calc(var(--navh) + env(safe-area-inset-top,0px) + 4px + 12px) 12px calc(var(--tabh) + env(safe-area-inset-bottom,0px) + 16px);max-width:720px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:5;background:#000;display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;height:var(--tabh);background:none;border:0;color:#aaa;font:500 14px var(--disp);text-transform:uppercase;letter-spacing:.8px;border-top:3px solid transparent}
+nav button.on{color:#fff;border-top-color:#d00000}
+h2{font:700 19px var(--disp);text-transform:uppercase;border-left:5px solid var(--red);padding-left:9px;margin:18px 0 8px;letter-spacing:.4px}
+.seg{display:flex;gap:6px;overflow-x:auto;margin:8px 0;padding-bottom:2px}
+.seg button{flex:0 0 auto;padding:7px 14px;border-radius:16px;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:500 13px var(--disp);text-transform:uppercase;letter-spacing:.5px}
+.seg button.on{background:#000;color:#fff;border-color:#000}
+@media (prefers-color-scheme:dark){.seg button.on{background:var(--red);border-color:var(--red);color:#000}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px 12px;margin:8px 0;border-left:4px solid var(--bd)}
+.card.HEAT{border-left-color:var(--red)}.card.COOL{border-left-color:var(--blue)}.card.VOL{border-left-color:var(--amb)}
+.r1{display:flex;align-items:center;gap:8px}
+.rk{font:700 16px var(--disp);color:var(--mut);min-width:22px}
+.nm{font-weight:700;flex:1;min-width:0}.nm small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.badge{font:700 11px var(--disp);letter-spacing:.6px;padding:3px 8px;border-radius:3px;color:#fff;white-space:nowrap;text-transform:uppercase}
+.b-HEAT{background:#d00000}.b-COOL{background:#0b5ed7}.b-VOL{background:#b26a00}.b-STEADY{background:#6b6b6b}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px}
+.bar{position:relative;height:22px;background:var(--bg);border-radius:3px;overflow:hidden;font-size:12px}
+.bar i{position:absolute;left:0;top:0;bottom:0;opacity:.85}.bar.h i{background:#d00000}.bar.c i{background:#0b5ed7}
+.bar span{position:absolute;left:7px;top:2px;color:var(--fg);font-weight:700;mix-blend-mode:normal;text-shadow:0 0 3px var(--card)}
+.bar b{position:absolute;right:7px;top:2px;font-weight:700;text-shadow:0 0 3px var(--card)}
+.meta{font-size:12px;color:var(--mut)}.why{font-size:12px;margin-top:3px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.stat{background:var(--card);border-top:3px solid var(--red);padding:8px 10px;border-radius:3px}
+.stat b{display:block;font:700 26px var(--disp);line-height:1.1}.stat span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+textarea,input[type=text],input[type=search]{width:100%;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:10px;font:inherit}
+.btn{background:#d00000;color:#fff;border:0;border-radius:6px;padding:11px 16px;font:700 14px var(--disp);text-transform:uppercase;letter-spacing:.6px}
+.btn.ghost{background:var(--card);color:var(--fg);border:1px solid var(--bd)}
+.row{display:flex;gap:8px;margin:8px 0;align-items:center;flex-wrap:wrap}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:3px 10px;font-size:12px}
+.chip b{color:var(--mut);cursor:pointer}
+.note{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--red);padding:9px 12px;font-size:13px;border-radius:4px;margin:8px 0}
+.more{width:100%;margin:8px 0}
+p,li{font-size:14px}ul{padding-left:20px}
+</style>
+</head>
+<body>
+<header><div class="hin"><div class="logo">SC</div><div class="ttl">Second Chance</div><div class="sub" id="sub">Loading…</div></div></header>
+<main id="view"></main>
+<nav id="tabs"><button data-t="heat" class="on">Heat Check</button><button data-t="team">My Team</button><button data-t="info">How It Works</button></nav>
+<datalist id="dl"></datalist>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const LABEL = { 'HEAT UP': ['HEAT','🔥 Heat up'], 'COOL DOWN': ['COOL','🧊 Cool down'], 'VOLATILE': ['VOL','⚡ Volatile'], 'STEADY': ['STEADY','Steady'] };
+let D = null, tab = 'heat', pos = 'All', mode = 'heat', shown = 20, pickPos = 'All', roster = LS.get('sc_roster', []), miss = [];
+
+// ---------- data
+async function load(force) {
+  try {
+    const r = await fetch('data.json' + (force ? '?t=' + Date.now() : ''), { cache: force ? 'reload' : 'default' });
+    if (!r.ok) throw new Error(r.status);
+    D = await r.json();
+  } catch (e) { if (!D) { $('#view').innerHTML = '<div class="note">Couldn\'t load data. Check your connection and tap Refresh.</div>'; $('#sub').textContent = 'Offline'; return; } }
+  D.byId = Object.fromEntries(D.players.map(p => [p.player_id, p]));
+  D.allById = Object.fromEntries(D.all.map(p => [p.player_id, p]));
+  $('#dl').innerHTML = D.all.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${esc(p.name)} (${p.pos}, ${p.team})">`).join('');
+  const m = D.meta, d = new Date(m.asof);
+  $('#sub').innerHTML = `${m.season}-${String(m.season + 1).slice(2)} · through Wk ${m.K}<br>Updated ${ago(d)}`;
+  render();
+}
+function ago(d) { const h = (Date.now() - d) / 36e5; return h < 1 ? 'just now' : h < 24 ? Math.round(h) + 'h ago' : Math.round(h / 24) + 'd ago'; }
+
+// ---------- matching (paste / CSV)
+const norm = s => String(s).toLowerCase().replace(/[.'’]/g, '').replace(/-/g, ' ').replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+function lev(a, b) { const m = a.length, n = b.length; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { let c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+function matchNames(lines) {
+  const keys = []; D.all.forEach(p => keys.push([norm(p.name), p.player_id]));
+  const exact = new Map(); keys.forEach(([k, id]) => { if (!exact.has(k)) exact.set(k, id); });
+  const hit = [], bad = [];
+  for (const raw of lines) {
+    const n = norm(raw); if (!n) continue; let id = exact.get(n);
+    if (!id) { let best = ''; for (const [k, i] of keys) if (k.length >= 6 && (' ' + n + ' ').includes(' ' + k + ' ') && k.length > best.length) { best = k; id = i; } }
+    if (!id) { let bs = 0; for (const [k, i] of keys) { const s = 1 - lev(n, k) / Math.max(n.length, k.length); if (s > bs) { bs = s; id = i; } } if (bs < 0.84) id = null; }
+    id ? hit.push(id) : bad.push(raw.trim());
+  }
+  return { hit: [...new Set(hit)], bad };
+}
+function parseCSV(t) {
+  const rows = t.split(/\r?\n/).filter(Boolean).map(l => l.split(',').map(x => x.replace(/^"|"$/g, '').trim()));
+  const h = rows[0].map(x => x.toLowerCase()); let c = h.findIndex(x => x.includes('name') || x.includes('player'));
+  return c >= 0 ? rows.slice(1).map(r => r[c]).filter(Boolean) : rows.map(r => r[0]);
+}
+
+// ---------- components
+function card(p, i, mode) {
+  const [cls, lab] = LABEL[p.flag], h = Math.round(p.p_heat * 100), c = Math.round(p.p_cool * 100);
+  const sos = p.sos_rem == null ? '' : ` · Sched ${p.sos_rem.toFixed(2)} ${p.sos_rem > 1.02 ? '↑ soft' : p.sos_rem < 0.98 ? '↓ tough' : ''}`;
+  return `<div class="card ${cls}"><div class="r1">${i != null ? `<div class="rk">${i}</div>` : ''}<div class="nm">${esc(p.name)}<small>${p.pos} · ${p.team}</small></div><span class="badge b-${cls}">${lab}</span></div>
+  <div class="bars"><div class="bar h"><i style="width:${h}%"></i><span>Heat-up</span><b>${h}%</b></div><div class="bar c"><i style="width:${c}%"></i><span>Cool-down</span><b>${c}%</b></div></div>
+  <div class="meta">${p.pre_ppg.toFixed(1)} PPG early${p.prior_ppg != null ? ` · ${p.prior_ppg.toFixed(1)} last yr` : ''}${sos}</div>${p.why ? `<div class="why">${esc(p.why)}</div>` : ''}</div>`;
+}
+const seg = (opts, cur, id) => `<div class="seg" id="${id}">${opts.map(o => `<button data-v="${o}" class="${o === cur ? 'on' : ''}">${o}</button>`).join('')}</div>`;
+const stat = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+
+// ---------- views
+function vHeat() {
+  const L = D.players.filter(p => pos === 'All' || p.pos === pos).sort((a, b) => mode === 'heat' ? b.p_heat - a.p_heat : b.p_cool - a.p_cool);
+  const base = D.base[mode === 'heat' ? 'heat' : 'cool'];
+  return `<div class="stats">${stat(D.players.filter(p => p.flag === 'HEAT UP').length, 'Heat-up flags')}${stat(D.players.filter(p => p.flag === 'COOL DOWN').length, 'Cool-down flags')}${stat(D.players.length, 'Scored')}</div>
+  ${seg(['Heat up', 'Cool down'], mode === 'heat' ? 'Heat up' : 'Cool down', 'sm')}${seg(['All', 'QB', 'RB', 'WR', 'TE'], pos, 'sp')}
+  <div class="meta">Odds that rest-of-season PPG lands 20% ${mode === 'heat' ? 'above' : 'below'} the Week 1-${D.meta.K} average. League average: ${Math.round(base * 100)}%.</div>
+  ${L.slice(0, shown).map((p, i) => card(p, i + 1)).join('')}${L.length > shown ? '<button class="btn ghost more" id="more">Show more</button>' : ''}`;
+}
+function vTeam() {
+  const R = roster.map(id => D.byId[id]).filter(Boolean).sort((a, b) => b.p_heat - a.p_heat);
+  const un = roster.filter(id => !D.byId[id]).map(id => D.allById[id]).filter(Boolean);
+  let h = `<h2>Import your team</h2><textarea id="paste" rows="4" placeholder="Paste player names, one per line (copying straight from your roster page works)"></textarea>
+  <div class="row"><button class="btn" id="imp">Import</button><label class="btn ghost" style="cursor:pointer">Upload CSV<input type="file" id="csv" accept=".csv,text/csv" hidden></label></div>
+  <div class="row"><input type="search" id="add" list="dl" placeholder="Or search and add a player"></div>`;
+  if (miss.length) h += `<div class="note">Couldn't match: ${miss.map(esc).join(', ')}. Use search above to add them.</div>`;
+  if (!roster.length) return h + `<div class="note">Your roster is saved on this phone only. Add players to see who's at risk of heating up or cooling down.</div>`;
+  h += `<div class="row">${roster.map(id => { const p = D.allById[id]; return p ? `<span class="chip">${esc(p.name)} <b data-rm="${id}">×</b></span>` : ''; }).join('')}</div>`;
+  h += `<div class="stats">${stat(R.length, 'Scored')}${stat(R.filter(p => p.flag === 'HEAT UP').length, 'Heat-up')}${stat(R.filter(p => p.flag === 'COOL DOWN').length, 'Cool-down')}</div>`;
+  h += `<h2>Your roster</h2>${R.map(p => card(p)).join('')}`;
+  if (un.length) h += `<div class="meta">Not scored (under 3 games or 6 PPG so far): ${un.map(p => esc(p.name)).join(', ')}</div>`;
+  h += `<h2>Sell-high / drop watch</h2>${R.slice().sort((a, b) => b.p_cool - a.p_cool).slice(0, 3).map(p => card(p)).join('')}`;
+  const O = D.players.filter(p => !roster.includes(p.player_id) && (pickPos === 'All' || p.pos === pickPos)).sort((a, b) => b.p_heat - a.p_heat).slice(0, 10);
+  h += `<h2>Second chance pickups</h2><div class="meta">Best heat-up odds off your roster. I can't see your league's waiver wire, so check availability.</div>${seg(['All', 'QB', 'RB', 'WR', 'TE'], pickPos, 'pp')}${O.map((p, i) => card(p, i + 1)).join('')}`;
+  return h;
+}
+function vInfo() {
+  const v = D.val, b = D.base, pc = x => Math.round(x * 100) + '%';
+  return `<h2>What it does</h2><p>For every season since 2006, the model looks at each QB/RB/WR/TE after the same number of completed weeks as now (Week ${D.meta.K}) and asks whether rest-of-season PPR points per game finished 20%+ above or below the early pace. It learns from ${b.n.toLocaleString()} player-seasons using early production, usage, touchdown dependence, volatility, last season and experience, then scores this season's players. Flags mean the odds are at least ${D.flagx}x the league average.</p>
+  <h2>How well it has worked</h2><div class="stats">${stat(v.heat.auc.toFixed(2), 'Heat-up AUC')}${stat(pc(v.heat.top), 'Top 10% hit (base ' + pc(v.heat.base) + ')')}${stat(v.cool.auc.toFixed(2), 'Cool-down AUC')}</div>
+  <div class="meta">AUC 0.50 = coin flip. Walk-forward test: each season ${v.heat.folds} predicted using only earlier seasons. Cool-down top 10% hit rate: ${pc(v.cool.top)} (base ${pc(v.cool.base)}).</div>
+  <h2>Read this before trading</h2><ul><li><b>Mostly regression to the mean.</b> The best heat-up predictor is a slow start relative to last year; the best cool-down predictor is a TD-fueled hot start.</li><li>Pure second-half splits don't repeat year to year.</li><li>Schedule is shown but not scored: it added no out-of-sample accuracy.</li><li>Not modeled: injuries, depth charts, trades. A 60% chance still misses 4 times in 10.</li></ul>
+  <h2>Install on your phone</h2><p><b>iPhone:</b> open in Safari, tap Share, then Add to Home Screen.<br><b>Android:</b> open in Chrome, tap the menu, then Install app.</p>
+  <button class="btn ghost" id="refresh">Refresh data</button><p class="meta">Data: nflverse. Updated automatically every 6 hours.</p>`;
+}
+function render() {
+  if (!D) return;
+  const v = $('#view');
+  if (D.meta.status !== 'ok') { v.innerHTML = `<div class="note">${D.meta.status === 'early' ? 'Too early in the season to score players (need 3+ completed weeks).' : 'The regular season is over. Scoring resumes after Week 3 of next season.'}</div>` + vInfo(); wire(); return; }
+  v.innerHTML = tab === 'heat' ? vHeat() : tab === 'team' ? vTeam() : vInfo();
+  wire();
+}
+function wire() {
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  const segs = (id, fn) => { const e = $(id); if (e) e.onclick = ev => { const b = ev.target.closest('button'); if (b) fn(b.dataset.v); }; };
+  segs('#sm', v => { mode = v === 'Heat up' ? 'heat' : 'cool'; shown = 20; render(); });
+  segs('#sp', v => { pos = v; shown = 20; render(); });
+  segs('#pp', v => { pickPos = v; render(); });
+  on('#more', () => { shown += 20; render(); });
+  on('#refresh', () => load(true));
+  on('#imp', () => { const r = matchNames($('#paste').value.split(/\n|,/)); miss = r.bad; roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); render(); });
+  const f = $('#csv'); if (f) f.onchange = () => { const rd = new FileReader(); rd.onload = () => { const r = matchNames(parseCSV(String(rd.result))); miss = r.bad; roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); render(); }; if (f.files[0]) rd.readAsText(f.files[0]); };
+  const a = $('#add'); if (a) a.onchange = () => { const r = matchNames([a.value.replace(/\s*\(.*\)$/, '')]); if (r.hit.length) { roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); miss = []; render(); } };
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { roster = roster.filter(x => x !== b.dataset.rm); LS.set('sc_roster', roster); render(); });
+}
+$('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.t; document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b)); window.scrollTo(0, 0); render(); };
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+load();
+</script>
+</body>
+</html>
