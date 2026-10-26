@@ -76,17 +76,19 @@ let D = null, tab = 'heat', pos = 'All', mode = 'heat', shown = 20, pickPos = 'A
 
 // ---------- data
 async function load(force) {
+  let ok = true;
   try {
     const r = await fetch('data.json' + (force ? '?t=' + Date.now() : ''), { cache: force ? 'reload' : 'default' });
     if (!r.ok) throw new Error(r.status);
     D = await r.json();
-  } catch (e) { if (!D) { $('#view').innerHTML = '<div class="note">Couldn\'t load data. Check your connection and tap Refresh.</div>'; $('#sub').textContent = 'Offline'; return; } }
+  } catch (e) { ok = false; if (!D) { $('#view').innerHTML = '<div class="note">Couldn\'t load data. Check your connection and tap Refresh.</div>'; $('#sub').textContent = 'Offline'; return; } }
   D.byId = Object.fromEntries(D.players.map(p => [p.player_id, p]));
   D.allById = Object.fromEntries(D.all.map(p => [p.player_id, p]));
   $('#dl').innerHTML = D.all.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${esc(p.name)} (${p.pos}, ${p.team})">`).join('');
   const m = D.meta, d = new Date(m.asof);
   $('#sub').innerHTML = `${m.season}-${String(m.season + 1).slice(2)} · through Wk ${m.K}<br>Updated ${ago(d)}`;
   render();
+  return ok;
 }
 function ago(d) { const h = (Date.now() - d) / 36e5; return h < 1 ? 'just now' : h < 24 ? Math.round(h) + 'h ago' : Math.round(h / 24) + 'd ago'; }
 
@@ -156,7 +158,7 @@ function vInfo() {
   ${v.beat ? `<div class="note"><b>The honest number: ${v.beat.auc.toFixed(2)}.</b> A slow start makes a heat-up likely by itself. Judged only on whether a player beats what his early PPG and last year's PPG already predict, accuracy drops to AUC ${v.beat.auc.toFixed(2)} (top 10% hit ${pc(v.beat.top)} vs ${pc(v.beat.base)} base). That's the real edge beyond bounce-back.</div>` : ''}
   <h2>Read this before trading</h2><ul><li><b>Mostly regression to the mean.</b> The best heat-up predictor is a slow start relative to last year; the best cool-down predictor is a TD-fueled hot start.</li><li>Pure second-half splits don't repeat year to year.</li><li>Schedule is shown but not scored: it added no out-of-sample accuracy. I also tested expected points from usage, snap and target trends, and team context. None improved accuracy reliably across Week 4, 6 and 9 cutoffs, so they're not used.</li><li>Not modeled: injuries, depth charts, trades. A 60% chance still misses 4 times in 10.</li></ul>
   <h2>Install on your phone</h2><p><b>iPhone:</b> open in Safari, tap Share, then Add to Home Screen.<br><b>Android:</b> open in Chrome, tap the menu, then Install app.</p>
-  <button class="btn ghost" id="refresh">Refresh data</button><p class="meta">Data: nflverse. Updated automatically every 6 hours.</p>`;
+  <button class="btn ghost" id="refresh">Refresh data</button><p class="meta">This button re-downloads the newest saved data. The data itself is rebuilt automatically every 6 hours on GitHub.</p>`;
 }
 function render() {
   if (!D) return;
@@ -172,7 +174,12 @@ function wire() {
   segs('#sp', v => { pos = v; shown = 20; render(); });
   segs('#pp', v => { pickPos = v; render(); });
   on('#more', () => { shown += 20; render(); });
-  on('#refresh', () => load(true));
+  on('#refresh', async () => {
+    const b = $('#refresh'); b.textContent = 'Checking…'; const before = D.meta.asof;
+    const ok = await load(true); const x = $('#refresh'); if (!x) return;
+    x.textContent = !ok ? "Couldn't reach the server" : D.meta.asof !== before ? 'Updated ✓' : 'Already the latest (data from ' + ago(new Date(D.meta.asof)) + ')';
+    setTimeout(() => { const y = $('#refresh'); if (y) y.textContent = 'Refresh data'; }, 4000);
+  });
   on('#imp', () => { const r = matchNames($('#paste').value.split(/\n|,/)); miss = r.bad; roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); render(); });
   const f = $('#csv'); if (f) f.onchange = () => { const rd = new FileReader(); rd.onload = () => { const r = matchNames(parseCSV(String(rd.result))); miss = r.bad; roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); render(); }; if (f.files[0]) rd.readAsText(f.files[0]); };
   const a = $('#add'); if (a) a.onchange = () => { const r = matchNames([a.value.replace(/\s*\(.*\)$/, '')]); if (r.hit.length) { roster = [...new Set([...roster, ...r.hit])]; LS.set('sc_roster', roster); miss = []; render(); } };
