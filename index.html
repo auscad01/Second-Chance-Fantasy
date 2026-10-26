@@ -78,7 +78,7 @@ let D = null, tab = 'heat', pos = 'All', mode = 'heat', shown = 20, pickPos = 'A
 async function load(force) {
   let ok = true;
   try {
-    const r = await fetch('data.json' + (force ? '?t=' + Date.now() : ''), { cache: force ? 'reload' : 'default' });
+    const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     D = await r.json();
   } catch (e) { ok = false; if (!D) { $('#view').innerHTML = '<div class="note">Couldn\'t load data. Check your connection and tap Refresh.</div>'; $('#sub').textContent = 'Offline'; return; } }
@@ -155,10 +155,10 @@ function vInfo() {
   return `<h2>What it does</h2><p>For every season since 2006, the model looks at each QB/RB/WR/TE after the same number of completed weeks as now (Week ${D.meta.K}) and asks whether rest-of-season PPR points per game finished 20%+ above or below the early pace. It learns from ${b.n.toLocaleString()} player-seasons using early production, usage, touchdown dependence, volatility, last season and experience, then scores this season's players. Flags mean the odds are at least ${D.flagx}x the league average.</p>
   <h2>How well it has worked</h2><div class="stats">${stat(v.heat.auc.toFixed(2), 'Heat-up AUC')}${stat(pc(v.heat.top), 'Top 10% hit (base ' + pc(v.heat.base) + ')')}${stat(v.cool.auc.toFixed(2), 'Cool-down AUC')}</div>
   <div class="meta">AUC 0.50 = coin flip. Walk-forward test: each season ${v.heat.folds} predicted using only earlier seasons. Cool-down top 10% hit rate: ${pc(v.cool.top)} (base ${pc(v.cool.base)}).</div>
-  ${v.beat ? `<div class="note"><b>The honest number: ${v.beat.auc.toFixed(2)}.</b> A slow start makes a heat-up likely by itself. Judged only on whether a player beats what his early PPG and last year's PPG already predict, accuracy drops to AUC ${v.beat.auc.toFixed(2)} (top 10% hit ${pc(v.beat.top)} vs ${pc(v.beat.base)} base). That's the real edge beyond bounce-back.</div>` : ''}
+  ${!v.beat ? `<div class="note"><b>Beyond-bounce-back accuracy is missing from this data file.</b> The page is current, but data.json was built by an older engine. Re-run "Refresh data" under Actions on GitHub.</div>` : `<div class="note"><b>The honest number: ${v.beat.auc.toFixed(2)}.</b> A slow start makes a heat-up likely by itself. Judged only on whether a player beats what his early PPG and last year's PPG already predict, accuracy drops to AUC ${v.beat.auc.toFixed(2)} (top 10% hit ${pc(v.beat.top)} vs ${pc(v.beat.base)} base). That's the real edge beyond bounce-back.</div>`}
   <h2>Read this before trading</h2><ul><li><b>Mostly regression to the mean.</b> The best heat-up predictor is a slow start relative to last year; the best cool-down predictor is a TD-fueled hot start.</li><li>Pure second-half splits don't repeat year to year.</li><li>Schedule is shown but not scored: it added no out-of-sample accuracy. I also tested expected points from usage, snap and target trends, and team context. None improved accuracy reliably across Week 4, 6 and 9 cutoffs, so they're not used.</li><li>Not modeled: injuries, depth charts, trades. A 60% chance still misses 4 times in 10.</li></ul>
   <h2>Install on your phone</h2><p><b>iPhone:</b> open in Safari, tap Share, then Add to Home Screen.<br><b>Android:</b> open in Chrome, tap the menu, then Install app.</p>
-  <button class="btn ghost" id="refresh">Refresh data</button><p class="meta">This button re-downloads the newest saved data. The data itself is rebuilt automatically every 6 hours on GitHub.</p>`;
+  <button class="btn ghost" id="refresh">Refresh data</button><p class="meta">Page v2.1 · data built ${String(D.meta.asof).replace('T', ' ')} · stats in data: ${Object.keys(v).join(', ')}</p><p class="meta">This button re-downloads the newest saved data. The data itself is rebuilt automatically every 6 hours on GitHub.</p>`;
 }
 function render() {
   if (!D) return;
@@ -186,7 +186,7 @@ function wire() {
   document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { roster = roster.filter(x => x !== b.dataset.rm); LS.set('sc_roster', roster); render(); });
 }
 $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.t; document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b)); window.scrollTo(0, 0); render(); };
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 load();
 </script>
 </body>
