@@ -1,4 +1,5 @@
-"""Feature-group test. Run:  python research.py
+"""Feature-group test. Run:  python research.py [cutoff_week] [group1,group2,...]
+(default cutoff = current completed week, capped at 14; default groups = every group in engine.GROUPS)
 For each candidate group, compares walk-forward out-of-sample AUC against the base model on three targets:
   heat  = rest-of-season PPG 20%+ above early PPG
   cool  = 20%+ below
@@ -10,6 +11,7 @@ from sklearn.metrics import roc_auc_score
 import engine
 
 K = int(sys.argv[1]) if len(sys.argv) > 1 else None
+TEST = sys.argv[2].split(",") if len(sys.argv) > 2 else list(engine.GROUPS)
 ctx = engine.prepare(everything=True)
 K = K or min(ctx["K"], 14)
 T = engine.build_training(ctx, K)
@@ -42,7 +44,7 @@ base, folds = evaluate([])
 print(f"folds {folds[0]}-{folds[-1]}")
 rows = [dict(config="base", **{f"auc_{t}": roc_auc_score(base[t]["y"], base[t]["p"]) for t in base})]
 keep = []
-for g in engine.GROUPS:
+for g in TEST:
     wf, _ = evaluate([g])
     r = dict(config=f"+{g}")
     for t in wf:
@@ -64,4 +66,4 @@ R = pd.DataFrame(rows)
 pd.set_option("display.width", 220)
 print(R.round(3).to_string(index=False))
 print("\nKEEP:", keep)
-R.to_csv("research_results.csv", index=False)
+R.to_csv(f"research_results_K{K}.csv", index=False)

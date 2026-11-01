@@ -24,7 +24,7 @@ CACHE = Path(__file__).parent / "data"
 COLS = ["player_id", "player_display_name", "position", "season", "week", "season_type", "team", "opponent_team",
         "fantasy_points_ppr", "carries", "targets", "target_share", "air_yards_share", "wopr", "attempts",
         "passing_tds", "rushing_tds", "receiving_tds", "passing_interceptions", "sacks_suffered",
-        "receiving_air_yards", "passing_air_yards"]
+        "receiving_air_yards", "passing_air_yards", "rushing_yards", "receiving_yards", "receptions"]
 NUM = COLS[8:]
 POS = ["QB", "RB", "WR", "TE"]
 TRAIN_FROM, MIN_PPG, MIN_G, UP, DOWN, FLAG_MULT, TEAMS_DONE = 2006, 6.0, 3, 1.2, 0.8, 1.6, 26
@@ -39,10 +39,21 @@ GROUPS = {
     "xfp": ["xfp_pg", "fpoe_pg", "fpoe_ratio", "xfp_trend", "prior_xfp_pg", "xfp_vs_prior"],
     "usage": ["tshare_trend", "carries_trend", "targets_trend", "snap_pg", "snap_last3", "snap_trend"],
     "team": ["team_pass_rate", "team_ppg", "team_ppg_vs_prior"],
+    # --- candidates added from the Reddit "breakout stats" thread and the Kitman Labs draft-vs-success study ---
+    "prior_late": ["prior_late_tshare", "prior_late_ppg", "prior_late_vs_early"],
+    "airyds": ["adot", "air_yds_pg", "air_yds_gap", "racr"],
+    "snapgap": ["snap_tgt_gap"],
+    "competition": ["team_target_rank", "tgt_competition", "qb_quality"],
+    "teammate_loss": ["lost_teammate_pts"],
+    "rbypc": ["rb_ypc", "rb_ypc_gap", "rb_carry_rank"],
+    "kitman": ["qb_rush_pg", "qb_rush_share", "rec_yds_pg", "yds_per_target", "rec_td_pg", "rb_rush_pts_share"],
 }
-# Tested walk-forward with research.py at cutoffs Week 4, 6 and 9 (2016-2025 folds, bootstrap CIs). Expected points
+# Round 1: tested walk-forward with research.py at cutoffs Week 4, 6 and 9 (2016-2025 folds, bootstrap CIs). Expected points
 # helped at Week 6 only (+0.011 AUC on "beat expectation"); at Weeks 4 and 9, and for usage trends and team context
-# everywhere, no group improved accuracy reliably. So nothing is switched on. Re-run research.py as seasons accrue.
+# everywhere, no group improved accuracy reliably.
+# Round 2 (Nov 2026): prior_late, airyds, snapgap, competition, teammate_loss, rbypc and kitman, same cutoffs and rules.
+# Only kitman cleared the bar, and only at Week 6 (+0.010 beat AUC, 90% lower bound +0.002); it was -0.004 at Week 4 and
+# -0.006 at Week 9. A group must pass at two of three cutoffs to be switched on, so nothing is. Re-run research.py as seasons accrue.
 ACTIVE = []
 
 
@@ -76,7 +87,7 @@ def get_season(y, refresh_hours=None):
     p = CACHE / f"{y}.parquet"
     if _fresh(p, refresh_hours):
         c = pd.read_parquet(p)
-        if "passing_air_yards" in c.columns:
+        if "rushing_yards" in c.columns:
             return c
     df = _download(URL, y)
     if df is None:
@@ -219,7 +230,74 @@ def _trends(pre, cols):
 
 
 def _prior_table(d):
-    return d.groupby("player_id").agg(prior_g=("week", "count"), prior_ppg=("pts", "mean"), prior_xfp_pg=("xfp", "mean")).reset_index()
+    """Last season's per-player summary, including how he finished (weeks 10+) vs how he started (weeks 1-9)."""
+    base = d.groupby("player_id").agg(prior_g=("week", "count"), prior_ppg=("pts", "mean"), prior_xfp_pg=("xfp", "mean")).reset_index()
+    L = d[d.week >= 10].groupby("player_id").agg(_lg=("week", "count"), prior_late_ppg=("pts", "mean"), prior_late_tshare=("target_share", "mean"))
+    E = d[d.week <= 9].groupby("player_id").agg(_eg=("week", "count"), _early=("pts", "mean"))
+    X = L.join(E, how="outer")
+    X.loc[X._lg.fillna(0) < 3, ["prior_late_ppg", "prior_late_tshare"]] = np.nan
+    X.loc[X._eg.fillna(0) < 3, "_early"] = np.nan
+    X["prior_late_vs_early"] = (X.prior_late_ppg / X._early.clip(lower=1)).replace([np.inf, -np.inf], np.nan).clip(upper=5)
+    return base.merge(X[["prior_late_ppg", "prior_late_tshare", "prior_late_vs_early"]].reset_index(), on="player_id", how="left")
+
+
+PRIOR_COLS = ["player_id", "prior_g", "prior_ppg", "prior_xfp_pg", "prior_late_ppg", "prior_late_tshare", "prior_late_vs_early"]
+
+
+def _extra(pre, A):
+    """Candidate feature columns. Each group is tested by research.py; only groups listed in ACTIVE reach the model."""
+    S = pre.groupby("player_id").agg(
+        rush_yds=("rushing_yards", "sum"), rush_td=("rushing_tds", "sum"), car=("carries", "sum"),
+        rec_yds=("receiving_yards", "sum"), tgt=("targets", "sum"), air=("receiving_air_yards", "sum"),
+        rec_yds_pg=("receiving_yards", "mean"), rec_td_pg=("receiving_tds", "mean"),
+        air_yds_pg=("receiving_air_yards", "mean"), rush_yds_pg=("rushing_yards", "mean"))
+    A = A.merge(S, left_on="player_id", right_index=True, how="left").reset_index(drop=True)
+    isq, isr, nq = A.pos == "QB", A.pos == "RB", A.pos != "QB"
+    rp = 0.1 * A.rush_yds + 6 * A.rush_td
+    # air yards: how deep his targets are, and whether production is lagging the opportunity (RACR < 1)
+    A["adot"] = np.where(nq & (A.tgt >= 5), A.air / A.tgt.clip(lower=1), np.nan)
+    A["racr"] = np.where(nq & (A.air >= 20), (A.rec_yds / A.air.clip(lower=1)).clip(0, 3), np.nan)
+    A["air_yds_gap"] = np.where(nq, A.aysh - A.tshare, np.nan)
+    A["air_yds_pg"] = np.where(nq, A.air_yds_pg, np.nan)
+    # Kitman: QB rushing, receiving yardage, and RB rush-vs-catch mix
+    A["qb_rush_pg"] = np.where(isq, A.rush_yds_pg, np.nan)
+    A["qb_rush_share"] = np.where(isq, rp / A.pts.clip(lower=1), np.nan)
+    A["rb_rush_pts_share"] = np.where(isr, rp / A.pts.clip(lower=1), np.nan)
+    A["yds_per_target"] = np.where(nq & (A.tgt >= 5), A.rec_yds / A.tgt.clip(lower=1), np.nan)
+    A["rec_yds_pg"] = np.where(nq, A.rec_yds_pg, np.nan)
+    A["rec_td_pg"] = np.where(nq, A.rec_td_pg, np.nan)
+    # RB yards per carry (shrunk toward the league mean) vs the team's lead back, and carry rank
+    lg = A.loc[isr, "rush_yds"].sum() / max(A.loc[isr, "car"].sum(), 1)
+    A["rb_ypc"] = np.where(isr, (A.rush_yds + 30 * lg) / (A.car + 30), np.nan)
+    R = A.loc[isr, ["player_id", "team", "car", "rb_ypc"]].copy()
+    R["rb_carry_rank"] = R.groupby("team").car.rank(ascending=False, method="first")
+    lead = R[R.rb_carry_rank == 1].set_index("team").rb_ypc
+    A = A.merge(R[["player_id", "rb_carry_rank"]], on="player_id", how="left").reset_index(drop=True)
+    A["rb_ypc_gap"] = np.where(isr, A.rb_ypc - A.team.map(lead), np.nan)
+    # competition for targets, and the quality of the QB throwing them
+    A["team_target_rank"] = A.loc[nq].groupby("team").tgt.rank(ascending=False, method="first")
+    pool = A[nq & (A.g_pre >= 2)][["player_id", "team", "tshare"]]
+    comp = {}
+    for t, g in pool.groupby("team"):
+        v = g.tshare.fillna(0).values
+        for i, pid in enumerate(g.player_id.values):
+            comp[(t, pid)] = np.delete(v, i).max() if len(v) > 1 else np.nan
+    A["tgt_competition"] = [comp.get((t, p), np.nan) if n else np.nan for t, p, n in zip(A.team, A.player_id, nq)]
+    A["_att"] = A.att_pg * A.g_pre
+    q = A[isq].sort_values("_att", ascending=False).drop_duplicates("team").set_index("team").prior_ppg
+    A["qb_quality"] = np.where(nq, A.team.map(q), np.nan)
+    # teammates at the same position who have missed the team's last 2 games (injury / benching) after playing 2+
+    wk = pre[["team", "week"]].drop_duplicates().sort_values(["team", "week"])
+    last2 = wk.groupby("team").tail(2).assign(_rec=1)
+    P = pre[["player_id", "team", "week", "pts", "position"]].merge(last2, on=["team", "week"], how="left")
+    P["_rec"] = P._rec.fillna(0)
+    Q = P.groupby(["player_id", "team"]).agg(pos=("position", "last"), g=("week", "count"), rec=("_rec", "sum"), ppg=("pts", "mean")).reset_index()
+    Q["cur"] = Q.player_id.map(A.set_index("player_id").team)
+    out = Q[(Q.rec == 0) & (Q.g >= 2) & (Q.ppg >= 6) & (Q.cur == Q.team) & (Q.team.map(wk.groupby("team").size()) >= 4)]
+    L = out.groupby(["team", "pos"]).ppg.sum().rename("_lost").reset_index()
+    A = A.merge(L, on=["team", "pos"], how="left").reset_index(drop=True)
+    A["lost_teammate_pts"] = A._lost.fillna(0) - A.player_id.map(out.set_index("player_id").ppg).fillna(0)
+    return A.drop(columns=["_lost", "_att", "rush_yds", "rush_td", "car", "rec_yds", "tgt", "air", "rush_yds_pg"])
 
 
 def features(d, prior, first, K, sos=None, team=None):
@@ -257,7 +335,12 @@ def features(d, prior, first, K, sos=None, team=None):
     A["rookie"] = A.prior_ppg.isna().astype(int)
     for p in POS:
         A["is_" + p] = (A.pos == p).astype(int)
-    return A[(A.g_pre >= MIN_G) & (A.pre_ppg >= MIN_PPG)].copy()
+    A = _extra(pre, A)
+    A = A[(A.g_pre >= MIN_G) & (A.pre_ppg >= MIN_PPG)].copy()
+    # snap share vs target share, ranked within position among scored players (WR/TE/RB)
+    pr = lambda c: A.groupby("pos")[c].rank(pct=True)
+    A["snap_tgt_gap"] = np.where(A.pos == "QB", np.nan, pr("snap_pg") - pr("tshare"))
+    return A
 
 
 # ================================================================ context + training table
@@ -270,7 +353,7 @@ def prepare(everything=False):
         f = get_season(y)
         if f is not None:
             frames[y] = f
-    use_snaps = everything or "usage" in ACTIVE
+    use_snaps = everything or "usage" in ACTIVE or "snapgap" in ACTIVE
     pmap = get_players_map() if use_snaps else None
     for y in list(frames):
         d = frames[y]
@@ -288,7 +371,7 @@ def season_features(ctx, y, Kc):
     d = f[y]
     sy = None if sch is None else sch[sch.season == y]
     sp = None if sch is None else sch[sch.season == y - 1]
-    prior = _prior_table(f[y - 1]) if (y - 1) in f else pd.DataFrame(columns=["player_id", "prior_g", "prior_ppg", "prior_xfp_pg"])
+    prior = _prior_table(f[y - 1]) if (y - 1) in f else pd.DataFrame(columns=PRIOR_COLS)
     return features(d, prior, ctx["first"], Kc, sos_table(d, sy, Kc), team_table(d, sy, sp, Kc))
 
 
